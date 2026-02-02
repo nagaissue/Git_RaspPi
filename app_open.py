@@ -26,6 +26,8 @@ thresholds = {
 }
 
 app = Dash(__name__)
+# デプロイ用のインスタンス定義
+server = app.server
 
 app.layout = html.Div([
     html.H1("栄養成分表示ダッシュボード", style={"textAlign": "center"}),
