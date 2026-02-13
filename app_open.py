@@ -26,7 +26,7 @@ thresholds = {
 }
 
 # --- グラフの事前作成と設定 ---
-fig_monthly=px.bar(
+fig_monthly=px.line(
     monthly_melted, 
     x='month', 
     y='Total Value', 
@@ -36,7 +36,10 @@ fig_monthly=px.bar(
     color_discrete_sequence=px.colors.qualitative.Pastel, # 少し色を柔らかく
     text_auto='.1f'
 )
+# ズーム（範囲選択）を無効化
 fig_monthly.update_layout(dragmode=False)
+# 必要に応じて線の太さやレイアウトを微調整
+fig_monthly.update_traces(line=dict(width=3))
 
 app = Dash(__name__)
 # デプロイ用のインスタンス定義
