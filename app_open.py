@@ -25,6 +25,19 @@ thresholds = {
     'energy': 300, 'protein': 10, 'fat': 10, 'carb': 40, 'salt': 2.0
 }
 
+# --- グラフの事前作成と設定 ---
+fig_monthly=px.bar(
+    monthly_melted, 
+    x='month', 
+    y='Total Value', 
+    color='Nutrient', 
+    barmode='group',
+    title="月ごとの項目別合計値推移",
+    color_discrete_sequence=px.colors.qualitative.Pastel, # 少し色を柔らかく
+    text_auto='.1f'
+)
+fig_monthly.update_layout(dragmode=False)
+
 app = Dash(__name__)
 # デプロイ用のインスタンス定義
 server = app.server
@@ -36,16 +49,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(
             id="monthly_summary_graph",
-            figure=px.bar(
-                monthly_melted, 
-                x='month', 
-                y='Total Value', 
-                color='Nutrient', 
-                barmode='group',
-                title="月ごとの項目別合計値推移",
-                color_discrete_sequence=px.colors.qualitative.Pastel, # 少し色を柔らかく
-                text_auto='.1f'
-            )
+            figure=fig_monthly
         )
     ], style={"padding": "20px", "backgroundColor": "#f8f9fa", "borderRadius": "10px", "marginBottom": "20px"}),
 
@@ -124,7 +128,7 @@ def update_dashboard(selected_nutrient, sort_order, range_val):
         title=f"{selected_nutrient} の個別データ並び替え",
         labels={"timestamp_str": "記録時刻", selected_nutrient: f"{selected_nutrient} 量"}
     )
-    fig.update_layout(width=min_width, bargap=0.3)
+    fig.update_layout(width=min_width, bargap=0.3, dragmode=False)
     
     return fig, df_sliced.to_dict("records")
 
