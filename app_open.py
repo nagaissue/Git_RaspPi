@@ -31,10 +31,9 @@ fig_monthly=px.line(
     x='month', 
     y='Total Value', 
     color='Nutrient', 
-    barmode='group',
     title="月ごとの項目別合計値推移",
     color_discrete_sequence=px.colors.qualitative.Pastel, # 少し色を柔らかく
-    text_auto='.1f'
+    markers=True, # データポイントに丸印を表示
 )
 # ズーム（範囲選択）を無効化
 fig_monthly.update_layout(dragmode=False)
