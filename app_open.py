@@ -8,54 +8,39 @@ df["timestamp"] = pd.to_datetime(df["timestamp"])
 df = df.sort_values("timestamp", ascending=True)
 df["timestamp_str"] = df["timestamp"].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-# --- 修正点: 月ごとの合計値算出ロジック ---
+# --- 月ごとの合計値算出ロジック ---
 df_monthly = df.copy()
-# 月ラベルを作成
 df_monthly['month'] = df_monthly['timestamp'].dt.to_period('M').astype(str)
-
-# 数値列とグループキー('month')だけを先に抽出してからグループ化
 num_cols = df_monthly.select_dtypes(include=['number']).columns.tolist()
 monthly_summary = df_monthly.groupby('month')[num_cols].sum().reset_index()
-
-# グラフ用にデータを整形
 monthly_melted = monthly_summary.melt(id_vars='month', var_name='Nutrient', value_name='Total Value')
 
-# カラーリングの基準値設定
 thresholds = {
     'energy': 300, 'protein': 10, 'fat': 10, 'carb': 40, 'salt': 2.0
 }
 
-# --- グラフの事前作成と設定 ---
-fig_monthly=px.line(
+fig_monthly = px.line(
     monthly_melted, 
     x='month', 
     y='Total Value', 
     color='Nutrient', 
     title="月ごとの項目別合計値推移",
-    color_discrete_sequence=px.colors.qualitative.Pastel, # 少し色を柔らかく
-    markers=True, # データポイントに丸印を表示
+    color_discrete_sequence=px.colors.qualitative.Pastel,
+    markers=True,
 )
-# ズーム（範囲選択）を無効化
 fig_monthly.update_layout(dragmode=False)
-# 必要に応じて線の太さやレイアウトを微調整
 fig_monthly.update_traces(line=dict(width=3))
 
 app = Dash(__name__)
-# デプロイ用のインスタンス定義
 server = app.server
 
 app.layout = html.Div([
     html.H1("栄養成分表示ダッシュボード", style={"textAlign": "center"}),
 
-    # 月ごとの合計棒グラフ
     html.Div([
-        dcc.Graph(
-            id="monthly_summary_graph",
-            figure=fig_monthly
-        )
+        dcc.Graph(id="monthly_summary_graph", figure=fig_monthly)
     ], style={"padding": "20px", "backgroundColor": "#f8f9fa", "borderRadius": "10px", "marginBottom": "20px"}),
 
-    # データテーブル
     dash_table.DataTable(
         id="data_table",
         columns=[{"name": i, "id": i} for i in df.columns if i != "timestamp_str"],
@@ -87,11 +72,16 @@ app.layout = html.Div([
         ], style={"display": "inline-block", "marginRight": "40px"}),
         
         html.Div([
-            html.Label("数値の並び替え (個別データ):"),
+            html.Label("データの並び替え:"),
             dcc.RadioItems(
-                options=[{"label": "大きい順", "value": "desc"}, {"label": "小さい順", "value": "asc"}],
-                value="desc",
-                id="value_sort_type",
+                options=[
+                    {"label": "数値：大きい順", "value": "val_desc"},
+                    {"label": "数値：小さい順", "value": "val_asc"},
+                    {"label": "日付：新しい順", "value": "time_desc"},
+                    {"label": "日付：古い順", "value": "time_asc"},
+                ],
+                value="val_desc",
+                id="sort_type",
                 inline=True
             ),
         ], style={"display": "inline-block"}),
@@ -106,7 +96,6 @@ app.layout = html.Div([
         ], style={"marginTop": "20px"}),
     ], style={"padding": "20px", "border": "1px solid #ddd", "borderRadius": "5px", "margin": "20px 0"}),
     
-    # 個別データの時系列グラフ
     html.Div([
         dcc.Graph(figure={}, id="nutrition_graph")
     ], style={"overflowX": "auto"}) 
@@ -116,18 +105,28 @@ app.layout = html.Div([
     Output("nutrition_graph", "figure"),
     Output("data_table", "data"),
     Input("nutrient_selector", "value"),
-    Input("value_sort_type", "value"),
+    Input("sort_type", "value"),
     Input("range_slider", "value")
 )
-def update_dashboard(selected_nutrient, sort_order, range_val):
-    is_ascending = (sort_order == "asc")
-    df_sorted = df.sort_values(selected_nutrient, ascending=is_ascending)
+def update_dashboard(selected_nutrient, sort_type, range_val):
+    # ソート条件の分岐
+    if sort_type == "val_desc":
+        df_sorted = df.sort_values(selected_nutrient, ascending=False)
+    elif sort_type == "val_asc":
+        df_sorted = df.sort_values(selected_nutrient, ascending=True)
+    elif sort_type == "time_desc":
+        df_sorted = df.sort_values("timestamp", ascending=False)
+    elif sort_type == "time_asc":
+        df_sorted = df.sort_values("timestamp", ascending=True)
+    else:
+        df_sorted = df
+
     df_sliced = df_sorted.iloc[range_val[0]:range_val[1]]
     
     min_width = max(800, len(df_sliced) * 60)
     fig = px.bar(
         df_sliced, x="timestamp_str", y=selected_nutrient,
-        title=f"{selected_nutrient} の個別データ並び替え",
+        title=f"{selected_nutrient} の表示（並び替え適用後）",
         labels={"timestamp_str": "記録時刻", selected_nutrient: f"{selected_nutrient} 量"}
     )
     fig.update_layout(width=min_width, bargap=0.3, dragmode=False)
