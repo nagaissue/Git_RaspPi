@@ -20,10 +20,10 @@ thresholds = {
 }
 
 fig_monthly = px.line(
-    monthly_melted, 
-    x='month', 
-    y='Total Value', 
-    color='Nutrient', 
+    monthly_melted,
+    x='month',
+    y='Total Value',
+    color='Nutrient',
     title="月ごとの項目別合計値推移",
     color_discrete_sequence=px.colors.qualitative.Pastel,
     markers=True,
@@ -98,7 +98,7 @@ app.layout = html.Div([
     
     html.Div([
         dcc.Graph(figure={}, id="nutrition_graph")
-    ], style={"overflowX": "auto"}) 
+    ], style={"overflowX": "auto"})
 ])
 
 @callback(
@@ -134,4 +134,4 @@ def update_dashboard(selected_nutrient, sort_type, range_val):
     return fig, df_sliced.to_dict("records")
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", debug=False)
